@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คำนวณหาค่า X</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .input-section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            font-weight: bold;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+        }
+        .calculation-steps {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 3px solid #3498db;
+        }
+        .unknown-input {
+            background-color: #fffacd;
+        }
+        .show-result-btn {
+            background-color: #27ae60;
+            margin-top: 10px;
+        }
+        .show-result-btn:hover {
+            background-color: #219653;
+        }
+        .hidden-value {
+            color: #3498db;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>คำนวณหาค่า X</h1>
+
+    <div class="input-section">
+        <label for="meanValue">ค่าเฉลี่ย:</label>
+        <input type="number" id="meanValue" step="0.01">
+
+        <label for="itemCount">จำนวนข้อมูลทั้งหมด:</label>
+        <input type="number" id="itemCount" min="2">
+
+        <label for="knownDataCount">จำนวนข้อมูลที่ทราบค่า:</label>
+        <input type="number" id="knownDataCount" min="1">
+
+        <button onclick="createUnknownInputTable()">สร้างตารางข้อมูลที่ทราบค่า</button>
+        <div id="unknownDataTableContainer"></div>
+
+        <button onclick="calculateUnknown()">คำนวณหาค่า X</button>
+
+        <div id="unknownResult" class="result" style="display: none;"></div>
+        <div id="unknownCalculationSteps" class="calculation-steps"></div>
+    </div>
+
+    <script>
+        let finalX = 0;
+        let totalSum = 0;
+        let knownSumGlobal = 0;
+
+        function createUnknownInputTable() {
+            const knownCount = parseInt(document.getElementById('knownDataCount').value);
+            const totalCount = parseInt(document.getElementById('itemCount').value);
+
+            if (knownCount >= totalCount) {
+                alert("จำนวนข้อมูลที่ทราบค่าต้องน้อยกว่าจำนวนข้อมูลทั้งหมด");
+                return;
+            }
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ลำดับที่</th>
+                            <th>ค่าข้อมูล</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            for (let i = 1; i <= totalCount; i++) {
+                const isUnknown = (i === totalCount);
+                tableHTML += `
+                    <tr>
+                        <td>${i}</td>
+                        <td>
+                            ${isUnknown ?
+                                '<input type="text" class="unknown-input" value="X" readonly>' :
+                                `<input type="number" id="knownData${i}" step="0.01" placeholder="กรอกข้อมูลที่ ${i}">`}
+                        </td>
+                        <td>${isUnknown ? 'ไม่ทราบค่า (X)' : 'รู้ค่า'}</td>
+                    </tr>`;
+            }
+
+            tableHTML += `</tbody></table>`;
+            document.getElementById('unknownDataTableContainer').innerHTML = tableHTML;
+            document.getElementById('unknownResult').style.display = "none";
+            document.getElementById('unknownCalculationSteps').innerHTML = "";
+        }
+
+        function calculateUnknown() {
+            const mean = parseFloat(document.getElementById('meanValue').value);
+            const totalCount = parseInt(document.getElementById('itemCount').value);
+            const knownCount = parseInt(document.getElementById('knownDataCount').value);
+
+            if (isNaN(mean) || isNaN(totalCount) || isNaN(knownCount) || knownCount >= totalCount) {
+                document.getElementById('unknownCalculationSteps').innerHTML = "กรุณากรอกข้อมูลให้ถูกต้อง";
+                return;
+            }
+
+            totalSum = mean * totalCount;
+            let knownSum = 0;
+            let knownValues = [];
+            for (let i = 1; i <= knownCount; i++) {
+                const value = parseFloat(document.getElementById(`knownData${i}`).value);
+                if (!isNaN(value)) {
+                    knownSum += value;
+                    knownValues.push(value);
+                }
+            }
+
+            if (knownValues.length === 0) {
+                document.getElementById('unknownCalculationSteps').innerHTML = "กรุณากรอกข้อมูลที่ทราบค่าอย่างน้อย 1 ค่า";
+                return;
+            }
+
+            finalX = totalSum - knownSum;
+            knownSumGlobal = knownSum;
+
+            let stepsHTML = "<strong>ขั้นตอนการคำนวณ:</strong><br>";
+            stepsHTML += `1. ผลรวมของข้อมูลทั้งหมด = ค่าเฉลี่ย × จำนวนข้อมูลทั้งหมด<br>`;
+            stepsHTML += `= ${mean} × ${totalCount} = <span class="hidden-value" onclick="showValue(this, ${totalSum})">คลิกเพื่อแสดงค่า</span><br><br>`;
+
+            stepsHTML += "2. ผลรวมของข้อมูลที่ทราบค่า = ";
+            for (let i = 0; i < knownValues.length; i++) {
+                stepsHTML += (i > 0 ? " + " : "") + knownValues[i];
+            }
+            stepsHTML += `<br>= <span class="hidden-value" onclick="showValue(this, ${knownSum})">คลิกเพื่อแสดงค่า</span><br><br>`;
+
+            stepsHTML += "3. จากสมการ<br>";
+            stepsHTML += `ผลรวมทั้งหมด = X + ผลรวมข้อมูลที่รู้ค่า<br>`;
+            stepsHTML += `<span class="hidden-value" onclick="showValue(this, ${totalSum})">คลิกเพื่อแสดงค่า</span> = X + <span class="hidden-value" onclick="showValue(this, ${knownSum})">คลิกเพื่อแสดงค่า</span><br>`;
+            stepsHTML += `X = <span class="hidden-value" onclick="showValue(this, ${totalSum})">คลิกเพื่อแสดงค่า</span> - <span class="hidden-value" onclick="showValue(this, ${knownSum})">คลิกเพื่อแสดงค่า</span><br>`;
+            stepsHTML += `X = <span class="hidden-value" onclick="showValue(this, ${finalX})">คลิกเพื่อแสดงค่า</span><br><br>`;
+            
+            stepsHTML += `<button class="show-result-btn" onclick="showFinalResult()">แสดงผลลัพธ์ทั้งหมด</button>`;
+
+            document.getElementById('unknownCalculationSteps').innerHTML = stepsHTML;
+            document.getElementById('unknownResult').style.display = "none";
+        }
+
+        function showValue(element, value) {
+            element.innerHTML = value.toFixed(2);
+            element.style.textDecoration = "none";
+            element.style.cursor = "default";
+        }
+
+        function showFinalResult() {
+            const resultDiv = document.getElementById('unknownResult');
+            resultDiv.style.display = "block";
+            resultDiv.innerHTML = `
+                <strong>สรุปผลลัพธ์:</strong><br>
+                - ผลรวมของข้อมูลทั้งหมด: ${totalSum.toFixed(2)}<br>
+                - ผลรวมข้อมูลที่ทราบค่า: ${knownSumGlobal.toFixed(2)}<br>
+                - <strong>ค่า X ที่ไม่ทราบค่า: ${finalX.toFixed(2)}</strong>
+            `;
+        }
+    </script>
+</body>
+</html>
